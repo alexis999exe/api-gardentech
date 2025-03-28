@@ -1,12 +1,21 @@
 {
-  "name": "api",
+  "name": "mi-api",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "API para gestión de usuarios y plantas",
+  "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "start": "node src/server.js"
+},
+
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.0",
+    "mongoose": "^7.0.0"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": ""
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
 }
