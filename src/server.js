@@ -81,9 +81,62 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// Ruta para obtener los datos del usuario
+app.get('/api/get-user-data', async (req, res) => {
+  const token = req.headers['authorization'];
+
+  if (!token) {
+    return res.status(403).json({ error: 'No se proporcionó token' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, 'tu_clave_secreta'); // Verifica el token
+    const user = await User.findById(decoded.id).select('-contrasena'); // Excluye la contraseña
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: 'Error en el servidor' });
+  }
+});
+
+// Ruta para editar el perfil del usuario
+app.put('/api/edit-profile', async (req, res) => {
+  const token = req.headers['authorization'];
+  const { nombre, apellido_p, apellido_m, correo, telefono, planta } = req.body;
+
+  if (!token) {
+    return res.status(403).json({ error: 'No se proporcionó token' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, 'tu_clave_secreta'); // Verifica el token
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Actualiza los datos del usuario
+    user.nombre = nombre || user.nombre;
+    user.apellido_p = apellido_p || user.apellido_p;
+    user.apellido_m = apellido_m || user.apellido_m;
+    user.correo = correo || user.correo;
+    user.telefono = telefono || user.telefono;
+    user.planta = planta || user.planta;
+
+    await user.save();
+    res.json({ message: 'Perfil actualizado exitosamente' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error en el servidor' });
+  }
+});
 
 // Iniciar el servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Servidor en http://10.198.56.151:3000/api/login`);
+  console.log(`https://api-gardentech.onrender.com`);
 });
