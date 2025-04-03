@@ -90,8 +90,8 @@ app.get('/api/get-user-data', async (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(token, 'tu_clave_secreta'); // Verifica el token
-    const user = await User.findById(decoded.id).select('-contrasena'); // Excluye la contraseña
+    const decoded = jwt.verify(token, 'tu_clave_secreta');
+    const user = await User.findById(decoded.id).select('-contrasena');
 
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -99,9 +99,11 @@ app.get('/api/get-user-data', async (req, res) => {
 
     res.json(user);
   } catch (error) {
-    res.status(500).json({ error: 'Error en el servidor' });
+    console.error("Error en la obtención de datos del usuario:", error); // Log del error
+    res.status(500).json({ error: 'Error en el servidor', details: error.message });
   }
 });
+
 
 // Ruta para editar el perfil del usuario
 app.put('/api/edit-profile', async (req, res) => {
