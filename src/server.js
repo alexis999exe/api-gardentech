@@ -160,13 +160,17 @@ app.get('/api/ultimos-sensores', async (req, res) => {
       },
       {
         $match: {
-          _id: { $in: ["Humedad Tierra", "Temperatura", "Nivel de Agua", "Humedad"] }
+          $or: [
+            { _id: { $regex: "^Humedad Tierra$", $options: 'i' } },
+            { _id: { $regex: "^Temperatura$", $options: 'i' } },
+            { _id: { $regex: "^Nivel de Agua$", $options: 'i' } },
+            { _id: { $regex: "^Humedad$", $options: 'i' } }
+          ]
         }
       }
     ]);
-    
-    console.log('Sensores obtenidos:', sensores); // Muestra los datos obtenidos en la consola
 
+    console.log('Sensores obtenidos:', sensores);
     res.json(sensores);
   } catch (error) {
     console.error('Error al obtener los datos de los sensores:', error);
