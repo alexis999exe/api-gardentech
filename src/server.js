@@ -83,23 +83,38 @@ app.post('/api/login', async (req, res) => {
 });
 
 // Ruta para obtener los datos del usuario
+// Ruta para obtener los datos del usuario
 app.get('/api/get-user-data', async (req, res) => {
   const token = req.headers['authorization'];
-
+  
   if (!token) {
     return res.status(403).json({ error: 'No se proporcionó token' });
   }
-
+  
   try {
     const decoded = jwt.verify(token, 'tu_clave_secreta'); // Verifica el token
     const user = await User.findById(decoded.id).select('-contrasena'); // Excluye la contraseña
-
+    
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
-
-    res.json(user);
+    
+    // Asegurar que planta existe y tiene las propiedades necesarias
+    const userData = {
+      nombre: user.nombre || '',
+      apellido_p: user.apellido_p || '',
+      apellido_m: user.apellido_m || '',
+      correo: user.correo || '',
+      telefono: user.telefono || '',
+      planta: {
+        nombre: user.planta && user.planta.nombre ? user.planta.nombre : '',
+        descripcion: user.planta && user.planta.descripcion ? user.planta.descripcion : '',
+      }
+    };
+    
+    res.json(userData);
   } catch (error) {
+    console.error('Error al obtener datos del usuario:', error);
     res.status(500).json({ error: 'Error en el servidor' });
   }
 });
@@ -107,31 +122,47 @@ app.get('/api/get-user-data', async (req, res) => {
 // Ruta para editar el perfil del usuario
 app.put('/api/edit-profile', async (req, res) => {
   const token = req.headers['authorization'];
-  const { nombre, apellido_p, apellido_m, correo, telefono, planta } = req.body;
-
+  const { nombre, apellido_p, apellido_m, correo, telefono, contrasena, planta } = req.body;
+  
   if (!token) {
     return res.status(403).json({ error: 'No se proporcionó token' });
   }
-
+  
   try {
     const decoded = jwt.verify(token, 'tu_clave_secreta'); // Verifica el token
     const user = await User.findById(decoded.id);
-
+    
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
-
-    // Actualiza los datos del usuario
-    user.nombre = nombre || user.nombre;
-    user.apellido_p = apellido_p || user.apellido_p;
-    user.apellido_m = apellido_m || user.apellido_m;
-    user.correo = correo || user.correo;
-    user.telefono = telefono || user.telefono;
-    user.planta = planta || user.planta;
-
+    
+    // Actualiza solo los campos que se enviaron
+    if (nombre !== undefined) user.nombre = nombre;
+    if (apellido_p !== undefined) user.apellido_p = apellido_p;
+    if (apellido_m !== undefined) user.apellido_m = apellido_m;
+    if (correo !== undefined) user.correo = correo;
+    if (telefono !== undefined) user.telefono = telefono;
+    
+    // Solo actualiza la contraseña si se proporcionó una nueva
+    if (contrasena && contrasena.trim() !== '') {
+      user.contrasena = contrasena;
+    }
+    
+    // Actualiza la información de la planta
+    if (planta) {
+      // Si no existe el objeto planta, lo creamos
+      if (!user.planta) {
+        user.planta = {};
+      }
+      
+      if (planta.nombre !== undefined) user.planta.nombre = planta.nombre;
+      if (planta.descripcion !== undefined) user.planta.descripcion = planta.descripcion;
+    }
+    
     await user.save();
     res.json({ message: 'Perfil actualizado exitosamente' });
   } catch (error) {
+    console.error('Error al actualizar el perfil:', error);
     res.status(500).json({ error: 'Error en el servidor' });
   }
 });
