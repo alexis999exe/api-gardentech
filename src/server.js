@@ -135,34 +135,45 @@ app.put('/api/edit-profile', async (req, res) => {
   }
 });
 
+const sensorSchema = new mongoose.Schema({
+  tipo_sensor: String,
+  valor: String,
+  fecha_monitoreo: Date
+});
+
+// Crear el modelo para los sensores
+const Sensor = mongoose.model('Sensor', sensorSchema);
+
 // Ruta para obtener el último dato de cada tipo de sensor
 app.get('/api/ultimos-sensores', async (req, res) => {
   try {
-    // Obtener el último dato para cada tipo de sensor
-    const sensores = await mongoose.model('Sensor').aggregate([
+    const sensores = await Sensor.aggregate([
       {
-        $sort: { fecha_monitoreo: -1 }  // Ordenamos por fecha de monitoreo, de más reciente a más antigua
+        $sort: { fecha_monitoreo: -1 }
       },
       {
         $group: {
-          _id: "$tipo_sensor",          // Agrupamos por tipo de sensor
-          ultimoValor: { $first: "$valor" }, // Tomamos el primer valor (el más reciente)
-          fecha: { $first: "$fecha_monitoreo" }  // También devolvemos la fecha de monitoreo
+          _id: "$tipo_sensor",
+          ultimoValor: { $first: "$valor" },
+          fecha: { $first: "$fecha_monitoreo" }
         }
       },
       {
         $match: {
-          _id: { $in: ["Humedad Tierra", "Temperatura", "Nivel de Agua", "Humedad"] } // Filtramos por los tipos de sensor
+          _id: { $in: ["Humedad Tierra", "Temperatura", "Nivel de Agua", "Humedad"] }
         }
       }
     ]);
+    
+    console.log('Sensores obtenidos:', sensores); // Muestra los datos obtenidos en la consola
 
-    // Devolver la respuesta con los resultados
     res.json(sensores);
   } catch (error) {
+    console.error('Error al obtener los datos de los sensores:', error);
     res.status(500).json({ error: 'Error al obtener los datos de los sensores' });
   }
 });
+
 
 // Iniciar el servidor
 const PORT = process.env.PORT || 3000;
