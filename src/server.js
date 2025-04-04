@@ -135,32 +135,32 @@ app.put('/api/edit-profile', async (req, res) => {
   }
 });
 
-// Definir el esquema del sensor
-const Sensor = mongoose.model('Sensor', new mongoose.Schema({
-  tipo_sensor: String,
-  valor: Number,
-  fecha_monitoreo: Date
-}));
-
-// Ruta para obtener los últimos valores de cada sensor
-app.get('/ultimos-valores', async (req, res) => {
+// Ruta para obtener el último dato de cada tipo de sensor
+app.get('/api/ultimos-sensores', async (req, res) => {
   try {
-    const temperatura = await Sensor.findOne({ tipo_sensor: "Temperatura" }).sort({ fecha_monitoreo: -1 });
-    const humedadTierra = await Sensor.findOne({ tipo_sensor: "Humedad Tierra" }).sort({ fecha_monitoreo: -1 });
-    const nivelAgua = await Sensor.findOne({ tipo_sensor: "Nivel de Agua" }).sort({ fecha_monitoreo: -1 });
+    // Obtener el último dato para cada tipo de sensor
+    const sensores = await mongoose.model('Sensor').aggregate([
+      {
+        $sort: { fecha_monitoreo: -1 }  // Ordenamos por fecha de monitoreo, de más reciente a más antigua
+      },
+      {
+        $group: {
+          _id: "$tipo_sensor",          // Agrupamos por tipo de sensor
+          ultimoValor: { $first: "$valor" }, // Tomamos el primer valor (el más reciente)
+          fecha: { $first: "$fecha_monitoreo" }  // También devolvemos la fecha de monitoreo
+        }
+      },
+      {
+        $match: {
+          _id: { $in: ["Humedad Tierra", "Temperatura", "Nivel de Agua", "Humedad"] } // Filtramos por los tipos de sensor
+        }
+      }
+    ]);
 
-    // Mostrar los resultados en consola para depuración
-    console.log({ temperatura, humedadTierra, nivelAgua });
-
-    // Devolver la respuesta con los valores más recientes
-    res.json({
-      Temperatura: temperatura ? temperatura.valor : null,
-      "Humedad Tierra": humedadTierra ? humedadTierra.valor : null,
-      "Nivel de Agua": nivelAgua ? nivelAgua.valor : null
-    });
+    // Devolver la respuesta con los resultados
+    res.json(sensores);
   } catch (error) {
-    console.error("Error al obtener los datos:", error);
-    res.status(500).send("Error en la consulta de los sensores.");
+    res.status(500).json({ error: 'Error al obtener los datos de los sensores' });
   }
 });
 
