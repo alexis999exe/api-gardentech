@@ -4,6 +4,7 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+
 const app = express();
 
 // Configuración de CORS
@@ -137,47 +138,39 @@ app.put('/api/edit-profile', async (req, res) => {
 
 const sensorSchema = new mongoose.Schema({
   tipo_sensor: String,
-  valor: String,
-  fecha_monitoreo: Date
+  valor: Number,
+  fecha_monitoreo: { type: Date, default: Date.now }
 });
 
-// Crear el modelo para los sensores
 const Sensor = mongoose.model('Sensor', sensorSchema);
 
-// Ruta para obtener el último dato de cada tipo de sensor
-app.get('/api/ultimos-sensores', async (req, res) => {
+// Ruta para obtener los últimos datos de cada tipo de sensor
+app.get('/api/ultimos-datos', async (req, res) => {
   try {
-    const sensores = await Sensor.aggregate([
-      {
-        $sort: { fecha_monitoreo: -1 }
-      },
-      {
-        $group: {
-          _id: "$tipo_sensor",
-          ultimoValor: { $first: "$valor" },
-          fecha: { $first: "$fecha_monitoreo" }
-        }
-      },
-      {
-        $match: {
-          $or: [
-            { _id: { $regex: "^Humedad Tierra$", $options: 'i' } },
-            { _id: { $regex: "^Temperatura$", $options: 'i' } },
-            { _id: { $regex: "^Nivel de Agua$", $options: 'i' } },
-            { _id: { $regex: "^Humedad$", $options: 'i' } }
-          ]
-        }
-      }
-    ]);
+    // Obtener el último dato de Temperatura
+    const ultimaTemperatura = await Sensor.findOne({ tipo_sensor: 'Temperatura' })
+      .sort({ fecha_monitoreo: -1 })
+      .limit(1);
 
-    console.log('Sensores obtenidos:', sensores);
-    res.json(sensores);
+    // Obtener el último dato de Humedad Tierra
+    const ultimaHumedad = await Sensor.findOne({ tipo_sensor: 'Humedad Tierra' })
+      .sort({ fecha_monitoreo: -1 })
+      .limit(1);
+
+    // Obtener el último dato de Nivel de Agua
+    const ultimoNivelAgua = await Sensor.findOne({ tipo_sensor: 'Nivel de Agua' })
+      .sort({ fecha_monitoreo: -1 })
+      .limit(1);
+
+    res.json({
+      temperatura: ultimaTemperatura ? ultimaTemperatura.valor : 'No disponible',
+      humedad: ultimaHumedad ? ultimaHumedad.valor : 'No disponible',
+      nivelAgua: ultimoNivelAgua ? ultimoNivelAgua.valor : 'No disponible',
+    });
   } catch (error) {
-    console.error('Error al obtener los datos de los sensores:', error);
-    res.status(500).json({ error: 'Error al obtener los datos de los sensores' });
+    res.status(500).json({ error: 'Error al obtener los últimos datos' });
   }
 });
-
 
 // Iniciar el servidor
 const PORT = process.env.PORT || 3000;
