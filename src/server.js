@@ -90,8 +90,8 @@ app.get('/api/get-user-data', async (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(token, 'tu_clave_secreta');
-    const user = await User.findById(decoded.id).select('-contrasena');
+    const decoded = jwt.verify(token, 'tu_clave_secreta'); // Verifica el token
+    const user = await User.findById(decoded.id).select('-contrasena'); // Excluye la contraseña
 
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -99,11 +99,9 @@ app.get('/api/get-user-data', async (req, res) => {
 
     res.json(user);
   } catch (error) {
-    console.error("Error en la obtención de datos del usuario:", error); // Log del error
-    res.status(500).json({ error: 'Error en el servidor', details: error.message });
+    res.status(500).json({ error: 'Error en el servidor' });
   }
 });
-
 
 // Ruta para editar el perfil del usuario
 app.put('/api/edit-profile', async (req, res) => {
@@ -136,6 +134,40 @@ app.put('/api/edit-profile', async (req, res) => {
     res.status(500).json({ error: 'Error en el servidor' });
   }
 });
+
+// Definir el esquema del sensor
+const sensorSchema = new mongoose.Schema({
+  tipo_sensor: String,
+  valor: String,
+  fecha_monitoreo: Date
+});
+
+const Sensor = mongoose.model('Sensor', sensorSchema);
+
+// Ruta para obtener el último valor de cada tipo de sensor
+app.get('/api/sensores/ultimos', async (req, res) => {
+  try {
+    const tipos = ['Temperatura', 'Humedad Tierra', 'Nivel de Agua'];
+    const resultados = {};
+
+    for (const tipo of tipos) {
+      const dato = await Sensor.findOne({ tipo_sensor: tipo }).sort({ fecha_monitoreo: -1 });
+      if (dato) {
+        resultados[tipo] = {
+          valor: dato.valor,
+          fecha: dato.fecha_monitoreo
+        };
+      } else {
+        resultados[tipo] = null;
+      }
+    }
+
+    res.json(resultados);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener los datos de sensores' });
+  }
+});
+
 
 // Iniciar el servidor
 const PORT = process.env.PORT || 3000;
