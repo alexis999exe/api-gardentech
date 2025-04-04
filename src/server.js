@@ -136,44 +136,62 @@ app.put('/api/edit-profile', async (req, res) => {
   }
 });
 
-const sensorSchema = new mongoose.Schema({
-  tipo_sensor: String,
-  valor: Number,
-  fecha_monitoreo: { type: Date, default: Date.now }
-});
-
-const Sensor = mongoose.model('Sensor', sensorSchema);
-
-// Ruta para obtener los últimos datos de cada tipo de sensor
-app.get('/api/ultimos-datos', async (req, res) => {
+// Ruta para obtener el último dato de temperatura
+app.get('/api/last-temperature', async (req, res) => {
   try {
-    // Obtener datos usando los nombres exactos de tu colección
-    const resultados = await Promise.all([
-      Sensor.findOne({ tipo_sensor: 'Temperatura' }).sort({ fecha_monitoreo: -1 }),
-      Sensor.findOne({ tipo_sensor: 'Humedad Tierra' }).sort({ fecha_monitoreo: -1 }),
-      Sensor.findOne({ tipo_sensor: 'Nivel de Agua' }).sort({ fecha_monitoreo: -1 })
-    ]);
-
-    // Formatear respuesta
-    const response = {
-      temperatura: resultados[0]?.valor || 'No disponible',
-      humedad: resultados[1]?.valor || 'No disponible',
-      nivelAgua: resultados[2]?.valor || 'No disponible',
-      success: true
-    };
-
-    console.log("Datos enviados:", response); // Para depuración
-    res.json(response);
+    const lastTemperature = await mongoose.connection.collection('sensores')
+      .find({ tipo_sensor: 'Temperatura' })
+      .sort({ fecha_monitoreo: -1 })
+      .limit(1)
+      .toArray();
+    
+    if (lastTemperature && lastTemperature.length > 0) {
+      res.json(lastTemperature[0]);
+    } else {
+      res.status(404).json({ error: 'No se encontraron datos de temperatura' });
+    }
   } catch (error) {
-    console.error("Error en /api/ultimos-datos:", error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Error al obtener datos',
-      details: error.message 
-    });
+    res.status(500).json({ error: 'Error en el servidor' });
   }
 });
 
+// Ruta para obtener el último dato de humedad
+app.get('/api/last-humidity', async (req, res) => {
+  try {
+    const lastHumidity = await mongoose.connection.collection('sensores')
+      .find({ tipo_sensor: { $in: ['Humedad Tierra', 'Humedad'] } })
+      .sort({ fecha_monitoreo: -1 })
+      .limit(1)
+      .toArray();
+    
+    if (lastHumidity && lastHumidity.length > 0) {
+      res.json(lastHumidity[0]);
+    } else {
+      res.status(404).json({ error: 'No se encontraron datos de humedad' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Error en el servidor' });
+  }
+});
+
+// Ruta para obtener el último dato de nivel de agua
+app.get('/api/last-water-level', async (req, res) => {
+  try {
+    const lastWaterLevel = await mongoose.connection.collection('sensores')
+      .find({ tipo_sensor: 'Nivel de Agua' })
+      .sort({ fecha_monitoreo: -1 })
+      .limit(1)
+      .toArray();
+    
+    if (lastWaterLevel && lastWaterLevel.length > 0) {
+      res.json(lastWaterLevel[0]);
+    } else {
+      res.status(404).json({ error: 'No se encontraron datos de nivel de agua' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Error en el servidor' });
+  }
+});
 // Iniciar el servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
