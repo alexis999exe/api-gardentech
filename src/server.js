@@ -147,28 +147,28 @@ const Sensor = mongoose.model('Sensor', sensorSchema);
 // Ruta para obtener los últimos datos de cada tipo de sensor
 app.get('/api/ultimos-datos', async (req, res) => {
   try {
-    // Obtener el último dato de cada tipo exactamente como están en la BD
-    const ultimaTemperatura = await Sensor.findOne({ tipo_sensor: 'Temperatura' })
-      .sort({ fecha_monitoreo: -1 })
-      .limit(1);
+    // Obtener datos usando los nombres exactos de tu colección
+    const resultados = await Promise.all([
+      Sensor.findOne({ tipo_sensor: 'Temperatura' }).sort({ fecha_monitoreo: -1 }),
+      Sensor.findOne({ tipo_sensor: 'Humedad Tierra' }).sort({ fecha_monitoreo: -1 }),
+      Sensor.findOne({ tipo_sensor: 'Nivel de Agua' }).sort({ fecha_monitoreo: -1 })
+    ]);
 
-    const ultimaHumedad = await Sensor.findOne({ tipo_sensor: 'Humedad Tierra' })
-      .sort({ fecha_monitoreo: -1 })
-      .limit(1);
+    // Formatear respuesta
+    const response = {
+      temperatura: resultados[0]?.valor || 'No disponible',
+      humedad: resultados[1]?.valor || 'No disponible',
+      nivelAgua: resultados[2]?.valor || 'No disponible',
+      success: true
+    };
 
-    const ultimoNivelAgua = await Sensor.findOne({ tipo_sensor: 'Nivel de Agua' })
-      .sort({ fecha_monitoreo: -1 })
-      .limit(1);
-
-    res.json({
-      temperatura: ultimaTemperatura ? ultimaTemperatura.valor : null,
-      humedad: ultimaHumedad ? ultimaHumedad.valor : null,
-      nivelAgua: ultimoNivelAgua ? ultimoNivelAgua.valor : null,
-    });
+    console.log("Datos enviados:", response); // Para depuración
+    res.json(response);
   } catch (error) {
     console.error("Error en /api/ultimos-datos:", error);
     res.status(500).json({ 
-      error: 'Error al obtener los últimos datos',
+      success: false,
+      error: 'Error al obtener datos',
       details: error.message 
     });
   }
