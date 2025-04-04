@@ -254,6 +254,17 @@ app.post('/api/sensor-data', async (req, res) => {
 });
 
 
+// Ruta para activar paro de emergencia
+app.post('/api/emergency-stop', (req, res) => {
+  // Aquí podrías guardar en la base de datos si lo deseas
+  // O simplemente responder al ESP32 si hace polling a esta info
+  console.log('🚨 Paro de emergencia activado');
+
+  // Podrías guardar en MongoDB si necesitas historiales
+  // o enviar una señal a otro sistema, etc.
+
+  res.json({ message: 'Paro de emergencia activado correctamente' });
+});
 
 
 // Iniciar el servidor
