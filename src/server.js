@@ -136,38 +136,33 @@ app.put('/api/edit-profile', async (req, res) => {
 });
 
 // Definir el esquema del sensor
-const sensorSchema = new mongoose.Schema({
+const Sensor = mongoose.model('Sensor', new mongoose.Schema({
   tipo_sensor: String,
-  valor: String,
+  valor: Number,
   fecha_monitoreo: Date
-});
+}));
 
-const Sensor = mongoose.model('Sensor', sensorSchema);
-
-// Ruta para obtener el último valor de cada tipo de sensor
-app.get('/api/sensores/ultimos', async (req, res) => {
+// Ruta para obtener los últimos valores de cada sensor
+app.get('/ultimos-valores', async (req, res) => {
   try {
-    const tipos = ['Temperatura', 'Humedad Tierra', 'Nivel de Agua'];
-    const resultados = {};
+    const temperatura = await Sensor.findOne({ tipo_sensor: "Temperatura" }).sort({ fecha_monitoreo: -1 });
+    const humedadTierra = await Sensor.findOne({ tipo_sensor: "Humedad Tierra" }).sort({ fecha_monitoreo: -1 });
+    const nivelAgua = await Sensor.findOne({ tipo_sensor: "Nivel de Agua" }).sort({ fecha_monitoreo: -1 });
 
-    for (const tipo of tipos) {
-      const dato = await Sensor.findOne({ tipo_sensor: tipo }).sort({ fecha_monitoreo: -1 });
-      if (dato) {
-        resultados[tipo] = {
-          valor: dato.valor,
-          fecha: dato.fecha_monitoreo
-        };
-      } else {
-        resultados[tipo] = null;
-      }
-    }
+    // Mostrar los resultados en consola para depuración
+    console.log({ temperatura, humedadTierra, nivelAgua });
 
-    res.json(resultados);
+    // Devolver la respuesta con los valores más recientes
+    res.json({
+      Temperatura: temperatura ? temperatura.valor : null,
+      "Humedad Tierra": humedadTierra ? humedadTierra.valor : null,
+      "Nivel de Agua": nivelAgua ? nivelAgua.valor : null
+    });
   } catch (error) {
-    res.status(500).json({ error: 'Error al obtener los datos de sensores' });
+    console.error("Error al obtener los datos:", error);
+    res.status(500).send("Error en la consulta de los sensores.");
   }
 });
-
 
 // Iniciar el servidor
 const PORT = process.env.PORT || 3000;
