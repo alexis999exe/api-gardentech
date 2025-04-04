@@ -223,6 +223,39 @@ app.get('/api/last-water-level', async (req, res) => {
     res.status(500).json({ error: 'Error en el servidor' });
   }
 });
+
+///////////
+
+// Ruta para recibir datos de sensores desde ESP32
+app.post('/api/sensor-data', async (req, res) => {
+  try {
+    const { tipo_sensor, valor, fecha_monitoreo } = req.body;
+    
+    // Validar que todos los campos necesarios estén presentes
+    if (!tipo_sensor || valor === undefined || !fecha_monitoreo) {
+      return res.status(400).json({ error: 'Faltan datos requeridos' });
+    }
+    
+    // Crear un documento con el formato correcto
+    const sensorData = {
+      tipo_sensor,
+      valor,
+      fecha_monitoreo: new Date(fecha_monitoreo)
+    };
+    
+    // Insertar en la colección sensores
+    await mongoose.connection.collection('sensores').insertOne(sensorData);
+    
+    res.status(201).json({ message: 'Datos del sensor guardados correctamente' });
+  } catch (error) {
+    console.error('Error al guardar datos del sensor:', error);
+    res.status(500).json({ error: 'Error en el servidor' });
+  }
+});
+
+
+
+
 // Iniciar el servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
